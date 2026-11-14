@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const $ = (id) => document.getElementById(id);
-let supabase = null, currentUser = null, currentProfile = null, employeeRows = [];
+let supabase = null, currentUser = null, currentProfile = null, employeeRows = [], departmentRows = [];
 
 function getConfig(){ return {url:localStorage.getItem("hr_supabase_url")||"", key:localStorage.getItem("hr_supabase_key")||""}; }
 function connect(){
@@ -47,14 +47,126 @@ async function loadTable(table,target){
   if(error){$(target).innerHTML=`<p class="message">تعذر قراءة ${safe(table)}: ${safe(error.message)}</p>`;return [];}
   renderTable(target,data);return data||[];
 }
+async function loadEmployees(){
+  $("employeesTable").textContent="جارٍ تحميل بيانات الموظفين...";
+  const {data,error}=await supabase.from("employees")
+    .select("id,employee_number,full_name,department_id,workplace,residence,phone,job_title,created_at,departments(name)")
+    .order("created_at",{ascending:false}).limit(500);
+  if(error){
+    $("employeesTable").innerHTML=`<p class="message">تعذر قراءة الموظفين: ${safe(error.message)}</p>`;
+    employeeRows=[];
+    $("employeeCount").textContent="تعذر تحميل السجلات";
+    return;
+  }
+  employeeRows=data||[];
+  renderEmployees(employeeRows);
+  $("employeeCount").textContent=`${employeeRows.length} سجل معروض`;
+}
+function renderEmployees(rows){
+  if(!rows.length){
+    $("employeesTable").innerHTML='<p class="muted">لا توجد سجلات موظفين. يمكنك إضافة أول موظف من زر «إضافة موظف».</p>';
+    return;
+  }
+  let html='<table><thead><tr><th>الرقم الوظيفي</th><th>الاسم الكامل</th><th>القسم</th><th>المسمى الوظيفي</th><th>مكان العمل</th><th>السكن</th><th>الهاتف</th><th>الإجراءات</th></tr></thead><tbody>';
+  for(const r of rows){
+    const dept=r.departments?.name || "—";
+    html+=`<tr>
+      <td>${safe(r.employee_number||"—")}</td><td>${safe(r.full_name)}</td><td>${safe(dept)}</td>
+      <td>${safe(r.job_title||"—")}</td><td>${safe(r.workplace||"—")}</td><td>${safe(r.residence||"—")}</td><td>${safe(r.phone||"—")}</td>
+      <td class="actions-cell"><button class="small-action edit-action" data-edit="${safe(r.id)}">تعديل</button><button class="small-action delete-action" data-delete="${safe(r.id)}">حذف</button></td>
+    </tr>`;
+  }
+  html+="</tbody></table>";
+  $("employeesTable").innerHTML=html;
+  $("employeesTable").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>editEmployee(b.dataset.edit)));
+  $("employeesTable").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteEmployee(b.dataset.delete)));
+}
+async function loadDepartmentsForSelect(){
+  const {data,error}=await supabase.from("departments").select("id,name").order("name");
+  if(error){notice("تعذر تحميل الأقسام: "+error.message);return;}
+  departmentRows=data||[];
+  $("employeeDepartment").innerHTML='<option value="">بدون قسم</option>'+departmentRows.map(d=>`<option value="${safe(d.id)}">${safe(d.name)}</option>`).join("");
+}
+function clearEmployeeForm(){
+  $("employeeForm").reset();
+  $("employeeId").value="";
+  $("employeeFormTitle").textContent="إضافة موظف جديد";
+  $("saveEmployeeBtn").textContent="حفظ الموظف";
+  $("employeeFormMessage").textContent="";
+}
+async function openEmployeeForm(row=null){
+  clearEmployeeForm();
+  await loadDepartmentsForSelect();
+  if(row){
+    $("employeeFormTitle").textContent="تعديل بيانات الموظف";
+    $("saveEmployeeBtn").textContent="حفظ التعديلات";
+    $("employeeId").value=row.id;
+    $("employeeFullName").value=row.full_name||"";
+    $("employeeNumber").value=row.employee_number||"";
+    $("employeeDepartment").value=row.department_id||"";
+    $("employeeJobTitle").value=row.job_title||"";
+    $("employeeWorkplace").value=row.workplace||"";
+    $("employeeResidence").value=row.residence||"";
+    $("employeePhone").value=row.phone||"";
+  }
+  $("employeeFormPanel").classList.remove("hidden");
+  $("employeeFormPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closeEmployeeForm(){ $("employeeFormPanel").classList.add("hidden"); clearEmployeeForm(); }
+function editEmployee(id){
+  const row=employeeRows.find(r=>String(r.id)===String(id));
+  if(row) openEmployeeForm(row);
+}
+async function saveEmployee(event){
+  event.preventDefault();
+  const id=$("employeeId").value;
+  const full_name=$("employeeFullName").value.trim();
+  if(!full_name){$("employeeFormMessage").textContent="يرجى إدخال الاسم الكامل.";return;}
+  const payload={
+    full_name,
+    employee_number:$("employeeNumber").value.trim()||null,
+    department_id:$("employeeDepartment").value||null,
+    job_title:$("employeeJobTitle").value.trim()||null,
+    workplace:$("employeeWorkplace").value.trim()||null,
+    residence:$("employeeResidence").value.trim()||null,
+    phone:$("employeePhone").value.trim()||null
+  };
+  $("saveEmployeeBtn").disabled=true;
+  $("saveEmployeeBtn").textContent="جارٍ الحفظ...";
+  $("employeeFormMessage").textContent="";
+  try{
+    let result;
+    if(id) result=await supabase.from("employees").update(payload).eq("id",id);
+    else result=await supabase.from("employees").insert(payload);
+    if(result.error) throw result.error;
+    closeEmployeeForm();
+    notice(id?"تم تعديل بيانات الموظف بنجاح.":"تمت إضافة الموظف بنجاح.");
+    await loadEmployees();
+    await countTable("employees","countEmployees");
+  }catch(e){
+    $("employeeFormMessage").textContent="تعذر الحفظ: "+(e.message||"خطأ غير معروف");
+  }finally{
+    $("saveEmployeeBtn").disabled=false;
+    $("saveEmployeeBtn").textContent=id?"حفظ التعديلات":"حفظ الموظف";
+  }
+}
+async function deleteEmployee(id){
+  const row=employeeRows.find(r=>String(r.id)===String(id));
+  if(!row)return;
+  if(!confirm(`هل أنت متأكد من حذف الموظف: ${row.full_name}؟ لا يمكن التراجع عن الحذف.`))return;
+  const {error}=await supabase.from("employees").delete().eq("id",id);
+  if(error){notice("تعذر حذف الموظف: "+error.message);return;}
+  notice("تم حذف الموظف.");
+  await loadEmployees();
+  await countTable("employees","countEmployees");
+}
 async function loadAll(){
   await loadDashboard();
-  employeeRows=await loadTable("employees","employeesTable");
+  await loadEmployees();
   await loadTable("departments","departmentsTable");
   await loadTable("forms","formsTable");
   await loadTable("profiles","usersTable");
   await loadTable("audit_logs","auditTable");
-  $("employeeCount").textContent=`${employeeRows.length} سجل معروض`;
 }
 async function login(){
   clearNotice();
@@ -78,12 +190,21 @@ async function init(){
   $("menuBtn").onclick=()=>$("nav").parentElement.classList.toggle("open");
   document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>goPage(b.dataset.page));
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>goPage(b.dataset.go));
-  $("refreshEmployees").onclick=async()=>{employeeRows=await loadTable("employees","employeesTable");$("employeeCount").textContent=`${employeeRows.length} سجل معروض`;};
+  $("refreshEmployees").onclick=loadEmployees;
+  $("addEmployeeBtn").onclick=()=>openEmployeeForm();
+  $("closeEmployeeForm").onclick=closeEmployeeForm;
+  $("cancelEmployeeBtn").onclick=closeEmployeeForm;
+  $("employeeForm").addEventListener("submit",saveEmployee);
   $("refreshDepartments").onclick=()=>loadTable("departments","departmentsTable");
   $("refreshForms").onclick=()=>loadTable("forms","formsTable");
   $("refreshUsers").onclick=()=>loadTable("profiles","usersTable");
   $("refreshAudit").onclick=()=>loadTable("audit_logs","auditTable");
-  $("employeeSearch").oninput=e=>{const q=e.target.value.toLowerCase();const filtered=employeeRows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));renderTable("employeesTable",filtered);};
+  $("employeeSearch").oninput=e=>{
+    const q=e.target.value.trim().toLowerCase();
+    const filtered=employeeRows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+    renderEmployees(filtered);
+    $("employeeCount").textContent=`${filtered.length} نتيجة`;
+  };
   $("previewField").onclick=()=>{const label=$("fieldLabel").value.trim();if(!label)return;const item=document.createElement("div");item.className="field-item";item.innerHTML=`<span>${safe(label)} · ${safe($("fieldType").selectedOptions[0].textContent)}</span><span>معاينة</span>`;$("fieldPreview").appendChild(item);$("fieldLabel").value="";};
   $("prepareText").onclick=()=>{const text=$("sourceText").value.trim();const files=[...$("sourceFiles").files].map(f=>f.name);$("assistantPreview").textContent=(text||"لم يُلصق نص.")+(files.length?"\n\nالملفات المرفقة:\n"+files.join("\n"):"\n\nلم يتم إرفاق ملفات.");};
   $("sourceFiles").onchange=()=>{$("fileNames").textContent=[...$("sourceFiles").files].map(f=>f.name).join("، ");};

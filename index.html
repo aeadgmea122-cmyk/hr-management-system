@@ -48,7 +48,7 @@
         <div><strong id="pageTitle">لوحة التحكم</strong><small id="userInfo">جارٍ التحقق من الحساب...</small></div>
         <span class="status-dot" title="واجهة النظام"></span>
       </header>
-      <div id="notice" class="notice hidden"></div>
+      <div id="notice" class="notice hidden" role="status"></div>
       <section id="page-dashboard" class="page">
         <div class="welcome"><div><p class="eyebrow">مرحباً بك</p><h1>لوحة التحكم</h1><p class="muted">نظرة عامة على بيانات الموارد البشرية</p></div><span class="admin-chip">الإدارة المركزية</span></div>
         <div class="stats">
@@ -64,9 +64,39 @@
       </section>
 
       <section id="page-employees" class="page hidden">
-        <div class="page-heading"><div><h1>الموظفون</h1><p class="muted">عرض سجلات الموظفين من قاعدة البيانات</p></div><button class="secondary" id="refreshEmployees">تحديث</button></div>
-        <div class="panel"><div class="table-tools"><input id="employeeSearch" placeholder="بحث في السجلات المعروضة..."><span id="employeeCount" class="muted small"></span></div><div id="employeesTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
-        <p class="muted small">إضافة وتعديل الموظفين ستُفعّل بعد مطابقة أسماء الأعمدة الفعلية في جدول employees لتجنب إدخال بيانات في حقول خاطئة.</p>
+        <div class="page-heading">
+          <div><h1>الموظفون</h1><p class="muted">إضافة وتعديل وحذف سجلات الموظفين</p></div>
+          <div class="heading-actions">
+            <button class="secondary" id="refreshEmployees">تحديث</button>
+            <button class="primary" id="addEmployeeBtn">إضافة موظف</button>
+          </div>
+        </div>
+
+        <div id="employeeFormPanel" class="panel hidden">
+          <div class="form-panel-heading"><h2 id="employeeFormTitle">إضافة موظف جديد</h2><button id="closeEmployeeForm" class="text-button" type="button">إغلاق</button></div>
+          <form id="employeeForm">
+            <input id="employeeId" type="hidden">
+            <div class="employee-form-grid">
+              <label>الاسم الكامل <span class="required">*</span><input id="employeeFullName" required maxlength="200" placeholder="اسم الموظف الكامل"></label>
+              <label>الرقم الوظيفي<input id="employeeNumber" maxlength="100" placeholder="الرقم الوظيفي"></label>
+              <label>القسم<select id="employeeDepartment"><option value="">بدون قسم</option></select></label>
+              <label>المسمى الوظيفي<input id="employeeJobTitle" maxlength="200" placeholder="المسمى الوظيفي"></label>
+              <label>مكان العمل<input id="employeeWorkplace" maxlength="200" placeholder="مكان العمل"></label>
+              <label>السكن<input id="employeeResidence" maxlength="300" placeholder="مكان السكن"></label>
+              <label>رقم الهاتف<input id="employeePhone" type="tel" maxlength="50" placeholder="رقم الهاتف"></label>
+            </div>
+            <p id="employeeFormMessage" class="form-message" role="status"></p>
+            <div class="form-actions">
+              <button id="saveEmployeeBtn" class="primary" type="submit">حفظ الموظف</button>
+              <button id="cancelEmployeeBtn" class="secondary" type="button">إلغاء</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="table-tools"><input id="employeeSearch" placeholder="ابحث بالاسم أو الرقم الوظيفي أو أي بيانات..."><span id="employeeCount" class="muted small"></span></div>
+          <div id="employeesTable" class="table-wrap">جارٍ تحميل البيانات...</div>
+        </div>
       </section>
 
       <section id="page-departments" class="page hidden">
@@ -112,7 +142,7 @@
         <div class="page-heading"><div><h1>سجل التدقيق</h1><p class="muted">آخر العمليات المسجلة في audit_logs</p></div><button class="secondary" id="refreshAudit">تحديث</button></div>
         <div class="panel"><div id="auditTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
       </section>
-      <footer>نظام إدارة الموارد البشرية · نسخة تأسيسية</footer>
+      <footer>نظام إدارة الموارد البشرية · نسخة مطوّرة لإدارة الموظفين</footer>
     </main>
   </div>
   <script type="module" src="app.js"></script>
