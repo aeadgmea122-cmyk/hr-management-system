@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123f37">
+  <title>نظام إدارة الموارد البشرية</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loginView" class="login-wrap">
+    <section class="login-card">
+      <div class="brand-mark">م</div>
+      <h1>نظام إدارة الموارد البشرية</h1>
+      <p class="muted">الدخول إلى لوحة الإدارة المركزية</p>
+      <label>البريد الإلكتروني<input id="email" type="email" autocomplete="username" placeholder="name@example.com"></label>
+      <label>كلمة المرور<input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور"></label>
+      <button id="loginBtn" class="primary full">تسجيل الدخول</button>
+      <p id="loginMessage" class="message" role="status"></p>
+      <details class="connect-details">
+        <summary>إعداد اتصال Supabase</summary>
+        <p class="muted small">أدخل رابط مشروعك والمفتاح العام Publishable فقط. لا تضع Secret أو service_role هنا.</p>
+        <label>رابط المشروع<input id="projectUrl" placeholder="https://xxxxx.supabase.co"></label>
+        <label>المفتاح العام<input id="publishableKey" placeholder="sb_publishable_..."></label>
+        <button id="saveConfigBtn" class="secondary full">حفظ إعداد الاتصال</button>
+      </details>
+    </section>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark small-mark">م</div><div><strong>الموارد البشرية</strong><small>الإدارة المركزية</small></div></div>
+      <nav id="nav">
+        <button data-page="dashboard" class="nav-item active">▦ <span>لوحة التحكم</span></button>
+        <button data-page="employees" class="nav-item">♙ <span>الموظفون</span></button>
+        <button data-page="departments" class="nav-item">▤ <span>الأقسام</span></button>
+        <button data-page="forms" class="nav-item">▣ <span>الاستمارات</span></button>
+        <button data-page="builder" class="nav-item">☷ <span>محرر الحقول</span></button>
+        <button data-page="users" class="nav-item">♧ <span>المستخدمون والصلاحيات</span></button>
+        <button data-page="assistant" class="nav-item">✧ <span>المساعد الذكي</span></button>
+        <button data-page="audit" class="nav-item">◷ <span>سجل التدقيق</span></button>
+      </nav>
+      <button id="logoutBtn" class="logout">تسجيل الخروج</button>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button id="menuBtn" class="icon-btn" aria-label="القائمة">☰</button>
+        <div><strong id="pageTitle">لوحة التحكم</strong><small id="userInfo">جارٍ التحقق من الحساب...</small></div>
+        <span class="status-dot" title="واجهة النظام"></span>
+      </header>
+      <div id="notice" class="notice hidden"></div>
+      <section id="page-dashboard" class="page">
+        <div class="welcome"><div><p class="eyebrow">مرحباً بك</p><h1>لوحة التحكم</h1><p class="muted">نظرة عامة على بيانات الموارد البشرية</p></div><span class="admin-chip">الإدارة المركزية</span></div>
+        <div class="stats">
+          <article class="stat"><span>إجمالي الموظفين</span><b id="countEmployees">—</b><small>من قاعدة البيانات</small></article>
+          <article class="stat"><span>الأقسام</span><b id="countDepartments">—</b><small>من قاعدة البيانات</small></article>
+          <article class="stat"><span>الاستمارات</span><b id="countForms">—</b><small>من قاعدة البيانات</small></article>
+          <article class="stat"><span>طلبات الاستمارات</span><b id="countSubmissions">—</b><small>من قاعدة البيانات</small></article>
+        </div>
+        <div class="panel"><h2>الوصول السريع</h2><div class="quick-links">
+          <button data-go="employees">إدارة الموظفين</button><button data-go="departments">إدارة الأقسام</button><button data-go="forms">الاستمارات</button><button data-go="assistant">المساعد الذكي</button>
+        </div></div>
+        <div class="panel"><h2>حالة الربط</h2><p id="connectionState" class="muted">جارٍ فحص الاتصال...</p><p class="small muted">تُعرض البيانات بحسب صلاحيات حسابك وسياسات الحماية في Supabase.</p></div>
+      </section>
+
+      <section id="page-employees" class="page hidden">
+        <div class="page-heading"><div><h1>الموظفون</h1><p class="muted">عرض سجلات الموظفين من قاعدة البيانات</p></div><button class="secondary" id="refreshEmployees">تحديث</button></div>
+        <div class="panel"><div class="table-tools"><input id="employeeSearch" placeholder="بحث في السجلات المعروضة..."><span id="employeeCount" class="muted small"></span></div><div id="employeesTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
+        <p class="muted small">إضافة وتعديل الموظفين ستُفعّل بعد مطابقة أسماء الأعمدة الفعلية في جدول employees لتجنب إدخال بيانات في حقول خاطئة.</p>
+      </section>
+
+      <section id="page-departments" class="page hidden">
+        <div class="page-heading"><div><h1>الأقسام</h1><p class="muted">بيانات جدول departments</p></div><button class="secondary" id="refreshDepartments">تحديث</button></div>
+        <div class="panel"><div id="departmentsTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
+      </section>
+
+      <section id="page-forms" class="page hidden">
+        <div class="page-heading"><div><h1>الاستمارات</h1><p class="muted">قوالب الاستمارات وحقولها</p></div><button class="secondary" id="refreshForms">تحديث</button></div>
+        <div class="panel"><div id="formsTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
+      </section>
+
+      <section id="page-builder" class="page hidden">
+        <div class="page-heading"><div><h1>محرر الحقول</h1><p class="muted">واجهة إعداد الحقول؛ الحفظ سيُربط بعد مراجعة مخطط form_fields</p></div></div>
+        <div class="panel">
+          <label>اسم الحقل<input id="fieldLabel" placeholder="مثال: الرقم الوظيفي"></label>
+          <label>نوع الحقل<select id="fieldType"><option value="text">نص</option><option value="number">رقم</option><option value="date">تاريخ</option><option value="select">قائمة اختيار</option><option value="textarea">نص طويل</option><option value="file">ملف</option></select></label>
+          <button id="previewField" class="primary">إضافة إلى المعاينة</button>
+          <div id="fieldPreview" class="field-list"><p class="muted">لم تتم إضافة حقول للمعاينة بعد.</p></div>
+          <p class="small muted">هذه معاينة محلية فقط حالياً؛ لن يتم تعديل قاعدة البيانات قبل التأكد من أعمدتها وسياسات الصلاحيات.</p>
+        </div>
+      </section>
+
+      <section id="page-users" class="page hidden">
+        <div class="page-heading"><div><h1>المستخدمون والصلاحيات</h1><p class="muted">ملفات المستخدمين من profiles</p></div><button class="secondary" id="refreshUsers">تحديث</button></div>
+        <div class="panel"><div id="usersTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
+        <div class="panel"><h2>الأدوار المعتمدة في النظام</h2><div class="role-list"><span>admin — مدير النظام</span><span>hr_manager — مدير الموارد البشرية</span><span>department_manager — مدير قسم</span><span>employee — موظف</span></div><p class="small muted">تغيير الأدوار يتم بعد مراجعة سياسات RLS، ولا نعرض هنا إجراءً يغيّر الصلاحيات تلقائياً.</p></div>
+      </section>
+
+      <section id="page-assistant" class="page hidden">
+        <div class="page-heading"><div><h1>المساعد الذكي</h1><p class="muted">تجهيز بيانات الموظفين من النصوص والملفات</p></div></div>
+        <div class="panel">
+          <label>الصق النص هنا<textarea id="sourceText" rows="7" placeholder="الصق قائمة أسماء أو بيانات موظفين..."></textarea></label>
+          <label>أرفق ملفات<input id="sourceFiles" type="file" multiple accept=".xlsx,.xls,.doc,.docx,.pdf,.png,.jpg,.jpeg,.webp,.txt"></label>
+          <div id="fileNames" class="muted small"></div>
+          <button id="prepareText" class="primary">تجهيز النص للمراجعة</button>
+          <div id="assistantPreview" class="preview-box">ستظهر هنا معاينة النص قبل إدخاله إلى قاعدة البيانات.</div>
+          <p class="small muted">هذه النسخة لا ترسل الملفات إلى نموذج ذكاء اصطناعي ولا تحفظها في قاعدة البيانات. سنضيف التحليل الآلي وقراءة الصور وملفات Office/PDF عبر خدمة آمنة لاحقاً، بعد إعداد مفتاح الخدمة على الخادم وليس في المتصفح.</p>
+        </div>
+      </section>
+
+      <section id="page-audit" class="page hidden">
+        <div class="page-heading"><div><h1>سجل التدقيق</h1><p class="muted">آخر العمليات المسجلة في audit_logs</p></div><button class="secondary" id="refreshAudit">تحديث</button></div>
+        <div class="panel"><div id="auditTable" class="table-wrap">جارٍ تحميل البيانات...</div></div>
+      </section>
+      <footer>نظام إدارة الموارد البشرية · نسخة تأسيسية</footer>
+    </main>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
